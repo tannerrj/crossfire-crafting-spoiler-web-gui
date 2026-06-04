@@ -1,0 +1,204 @@
+{% extends "base.html.j2" %}
+
+{% block title %}Crossfire Recipes — {{ sort_label }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  h1 { font-size: 1.4rem; margin-bottom: 1.25rem; color: var(--text); }
+
+  /* ── Search bar ──────────────────────────────────────────── */
+  .search-wrap {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #search {
+    flex: 1 1 220px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.85rem;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--text-muted); }
+
+  #result-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ── Table ───────────────────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  thead th {
+    background: var(--surface2);
+    border-bottom: 2px solid var(--border);
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    transition: color .15s;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th .sort-arrow { margin-left: 4px; opacity: .4; }
+  thead th.sort-asc  .sort-arrow::after { content: " ▲"; opacity: 1; }
+  thead th.sort-desc .sort-arrow::after { content: " ▼"; opacity: 1; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr.hidden { display: none; }
+
+  td { padding: 0.55rem 0.9rem; vertical-align: middle; }
+  td.num { text-align: right; color: var(--gold); font-variant-numeric: tabular-nums; }
+  td.skill-cell { white-space: nowrap; }
+
+  .no-results {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-style: italic;
+    display: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>{{ sort_label }}</h1>
+
+  <div class="search-wrap">
+    <input id="search" type="search" placeholder="Filter by name, skill, equipment…" autocomplete="off">
+    <span id="result-count"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="recipe-table">
+      <thead>
+        <tr>
+          <th data-col="0" data-type="num">Exp<span class="sort-arrow"></span></th>
+          <th data-col="1" data-type="num">Difficulty<span class="sort-arrow"></span></th>
+          <th data-col="2" data-type="str">Skill<span class="sort-arrow"></span></th>
+          <th data-col="3" data-type="str">Recipe name<span class="sort-arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody id="recipe-tbody">
+        {% for r in recipes %}
+        <tr data-name="{{ r.name|lower }}"
+            data-skill="{{ r.skill|default('')|lower }}"
+            data-cauldron="{{ r['Cauldron']|default('')|lower }}">
+          <td class="num">{{ r.Exp if r.Exp is defined else '' }}</td>
+          <td class="num">{{ r.Difficulty if r.Difficulty is defined else '' }}</td>
+          <td class="skill-cell">
+            {% if r.skill is defined %}
+            <span class="badge badge-{{ r.skill|lower|replace(' ','_') if r.skill|lower in ['alchemy','woodsman','thaumaturgy','smithery','jeweler','bowyer'] else 'default' }}">
+              {{ r.skill }}
+            </span>
+            {% endif %}
+          </td>
+          <td><a href="{{ r.nameHash }}.html">{{ r.name }}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="no-results" id="no-results">No recipes match your filter.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const tbody      = document.getElementById('recipe-tbody');
+  const searchEl   = document.getElementById('search');
+  const countEl    = document.getElementById('result-count');
+  const noResults  = document.getElementById('no-results');
+  const allRows    = Array.from(tbody.querySelectorAll('tr'));
+  const total      = allRows.length;
+
+  let sortCol  = {{ default_sort_col }};
+  let sortDir  = '{{ default_sort_dir }}';   // 'asc' | 'desc'
+
+  // ── Filter ─────────────────────────────────────────────────
+  function applyFilter() {
+    const q = searchEl.value.trim().toLowerCase();
+    let visible = 0;
+    allRows.forEach(row => {
+      const match = !q ||
+        row.dataset.name.includes(q) ||
+        row.dataset.skill.includes(q) ||
+        row.dataset.cauldron.includes(q);
+      row.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    countEl.textContent = q ? `${visible} of ${total}` : `${total} recipes`;
+    noResults.style.display = (visible === 0) ? 'block' : 'none';
+  }
+
+  // ── Sort ───────────────────────────────────────────────────
+  function cellValue(row, col) {
+    return row.querySelectorAll('td')[col]?.textContent.trim() ?? '';
+  }
+
+  function applySort(col, type) {
+    const ths = document.querySelectorAll('#recipe-table thead th');
+    ths.forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+
+    if (sortCol === col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortCol = col;
+      sortDir = 'asc';
+    }
+    ths[col].classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+    allRows.sort((a, b) => {
+      let av = cellValue(a, col);
+      let bv = cellValue(b, col);
+      if (type === 'num') {
+        av = parseFloat(av) || 0;
+        bv = parseFloat(bv) || 0;
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
+      return sortDir === 'asc'
+        ? av.localeCompare(bv)
+        : bv.localeCompare(av);
+    });
+
+    allRows.forEach(row => tbody.appendChild(row));
+    applyFilter();
+  }
+
+  // ── Wire up ────────────────────────────────────────────────
+  document.querySelectorAll('#recipe-table thead th').forEach(th => {
+    th.addEventListener('click', () =>
+      applySort(parseInt(th.dataset.col), th.dataset.type));
+  });
+
+  searchEl.addEventListener('input', applyFilter);
+
+  // initial state
+  const ths = document.querySelectorAll('#recipe-table thead th');
+  ths[sortCol].classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  applyFilter();
+})();
+</script>
+{% endblock %}
