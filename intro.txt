@@ -1,0 +1,45 @@
+On 9/12/16 4:24 AM, Mark Munro wrote:
+All good,
+I'm replying directly to you rather than the list because this material is something of a spoiler. I leave it up to you as to what you want to do with it.
+This material is built with open source tools and I release it in the same spirit.
+It consists of 3 perl scripts and 3 output templates.
+Beyond std perl it also requires:
+libhtml-template-perl
+
+And to create the images a system call is made to an executable found in the package:
+graphviz
+
+It sources its material from a server dump with the '-m7' switch set.
+I created this from the Debian sarge release, 2005.
+
+-- crossfire-m7/m7.txt
+  - I include the m7.txt file that works with the code.
+  - It may vary from a similar file created with the latest crossfire build.
+  - It may have received some light editing from such an export.
+
+-- crossfire-m7/m7_2_eval.pl
+  - First stage:
+  - the m7 file is parsed into a perl 'array of hash refs'.
+  - the result is simple sent to a file with Data::Dumper
+
+-- crossfire-m7/preIndexer.pl
+  - Forward and reverse indexing is established by this script.
+  - Again output is simply dumped to file.
+
+-- crossfire-m7/buildSite.pl
+  - This script picks up the indexed data and uses the templates to produce the desired output.
+
+crossfire-m7/templates/dot.tmpl
+crossfire-m7/templates/html.tmpl
+crossfire-m7/templates/index.tmpl
+
+As I was developing this, I needed a way of re-running the process from the appropriate stage so I've included this simple makefile for completeness.
+  - crossfire-m7/Makefile
+
+The entirety can be found in the attached tar-ball.
+It should have an md5sum of:
+156e571750f216552af2a184a245d883
+
+There's little commentary in the code, please feel free with any questions.
+
+I leave it entirely up to you as to what is done with this material.
