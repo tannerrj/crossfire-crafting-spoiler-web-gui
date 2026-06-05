@@ -1,4 +1,4 @@
-# CLAUDE.md — crossfire-m7
+# CLAUDE.md — Crossfire Spoiler Web GUI
 
 Developer guide for AI assistants and contributors working on this codebase.
 
@@ -8,7 +8,7 @@ Developer guide for AI assistants and contributors working on this codebase.
 
 Generates a static HTML reference site for crafting recipes in the
 [Crossfire](https://crossfire.real-time.com/) MMORPG. The source data is a
-server dump produced with the `-m7` switch (Debian sarge / 2005 release).
+server dump produced with the `-m7` switch.
 
 The pipeline has three stages:
 
@@ -29,21 +29,25 @@ from any static host or browsed directly from disk (`file://`).
 
 ```
 crossfire-m7/
-├── m7.txt                  Source data (server dump, ~1 372 lines)
-├── parse_m7.py             Stage 1: parser
-├── index_recipes.py        Stage 2: indexer
+├── m7.txt                  Source data (server dump, 521 lines)
+├── parse_m7.py             Stage 1: CSV parser
+├── index_recipes.py        Stage 2: forward/reverse indexer
 ├── build_site.py           Stage 3: site builder
 ├── Makefile                Orchestrates all three stages
 ├── templates/
-│   ├── base.html.j2        Shared layout, nav, and CSS
-│   ├── index.html.j2       Sortable/filterable recipe list
+│   ├── base.html.j2        Shared layout, nav, and CSS variables
+│   ├── index.html.j2       Sortable/searchable recipe list
 │   └── recipe.html.j2      Individual recipe page + SVG graph
+├── intro.txt               Original author's note (Mark Munro, 2016)
+├── README.md               GitHub-facing project description
+├── CLAUDE.md               This file
+├── .gitignore
 ├── all.json                Stage 1 output  (generated, not committed)
 ├── indexed.json            Stage 2 output  (generated, not committed)
 └── site/                   Final HTML site (generated, not committed)
 ```
 
-Generated files (`all.json`, `indexed.json`, `site/`) should not be committed.
+Generated files (`all.json`, `indexed.json`, `site/`) are listed in `.gitignore` and should not be committed.
 
 ---
 
@@ -81,13 +85,24 @@ All paths are optional; the defaults match the Makefile.
 
 ## Dependencies
 
-| Package | apt name | Purpose |
+| Package | apt/dnf name | Purpose |
 |---|---|---|
 | Python 3.12+ | `python3` | Runtime |
 | Jinja2 | `python3-jinja2` | HTML templating |
 | graphviz (binary) | `graphviz` | Renders `dot` → SVG |
 
-No pip / virtualenv needed — everything is in the Noble apt repos.
+**Ubuntu / Debian / Linux Mint**
+```bash
+sudo apt install python3 python3-jinja2 graphviz
+```
+
+**Fedora**
+```bash
+sudo dnf install python3 python3-jinja2 graphviz
+```
+
+No pip / virtualenv needed — all packages are available in the standard
+distribution repos.
 
 `graphviz` is optional. Without it the site builds fine; recipe pages just
 omit the dependency graph. `build_site.py --no-graphs` skips it explicitly.
@@ -166,10 +181,13 @@ get stub entries with only `name`, `index`, `nameHash`, `usedBy`, and
 `minimum`. They have no `Ingred` key. The site generates a page for them too.
 
 **Current dataset sizes:** 442 full recipes, 268 ingredient stubs = 710 total
-entries. Skills: `alchemy`, `bowyer`, `jeweler`, `smithery`, `thaumaturgy`,
-`woodsman`. Cauldrons: `cauldron`, `forge`, `jeweler_bench`, `stove`,
-`tanbench`, `thaumaturg_desk`, `workbench`. Exp range: 100–500,000.
-Difficulty range: -35–50 (negative difficulties exist for some smelting recipes).
+entries, producing 886 HTML pages (plus 4 index pages). The page count exceeds
+the entry count because case-collision nameHashes (see Known Quirks) produce
+two separate files for 24 name pairs. Skills: `alchemy`, `bowyer`, `jeweler`,
+`smithery`, `thaumaturgy`, `woodsman`. Cauldrons: `cauldron`, `forge`,
+`jeweler_bench`, `stove`, `tanbench`, `thaumaturg_desk`, `workbench`.
+Exp range: 100–500,000. Difficulty range: -35–50 (negative difficulties
+exist for some smelting recipes).
 
 ### Recipe page context
 
@@ -308,7 +326,7 @@ To use a different or updated `m7.txt`:
 
 ## Extending the site
 
-**Add a new index sort** (e.g. by bookchance): add a new `write_index()` call
+**Add a new index sort** (e.g. by yield): add a new `write_index()` call
 in `build_site.py`, add a nav link in `base.html.j2`, and optionally adjust
 the JS default sort in the new page's template call.
 
