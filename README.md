@@ -9,8 +9,8 @@ The output is a fully self-contained directory of HTML files — no server requi
 ## Features
 
 - **442 recipes** across 6 skills: alchemy, bowyer, jeweler, smithery, thaumaturgy, woodsman
-- **710 pages** total — every ingredient gets its own page showing which recipes use it
-- **Dependency graphs** rendered as inline SVG via Graphviz — zoomable, scalable, with clickable nodes
+- **886 pages** — every ingredient gets its own page showing which recipes use it
+- **Dependency graphs** rendered as inline SVG via Graphviz — scalable, with clickable nodes
 - **Four index views**: A–Z, by experience, by difficulty, by skill
 - **Live search and sortable columns** on every index page — no page reload
 - **Profit / loss indicator** per recipe, calculated from ingredient cost vs. result value
@@ -21,10 +21,22 @@ The output is a fully self-contained directory of HTML files — no server requi
 
 ## Requirements
 
-Ubuntu Noble (24.04) / Debian — everything is in the standard apt repos:
+Python 3.12+, Jinja2, and Graphviz. Install using the package manager for your distribution:
 
+**Ubuntu / Debian**
 ```bash
 sudo apt install python3 python3-jinja2 graphviz
+```
+
+**Linux Mint**
+Linux Mint is Ubuntu-based and uses the same `apt` packages:
+```bash
+sudo apt install python3 python3-jinja2 graphviz
+```
+
+**Fedora**
+```bash
+sudo dnf install python3 python3-jinja2 graphviz
 ```
 
 | Package | Purpose |
@@ -40,10 +52,9 @@ Graphviz is optional. Without it, recipe pages are generated without dependency 
 ## Quick start
 
 ```bash
-git clone https://github.com/yourname/crossfire-m7.git
-cd crossfire-m7
+git clone https://github.com/yourname/crossfire-spoiler-web-gui.git
+cd crossfire-spoiler-web-gui
 
-# Place your m7.txt in the project root, then:
 make
 
 # Browse the result
@@ -51,7 +62,7 @@ python3 -m http.server 8080 --directory site/
 # → http://localhost:8080
 ```
 
-### Other make targets
+### Make targets
 
 | Command | Effect |
 |---|---|
@@ -102,7 +113,7 @@ mushroom_1 of Gourmet,7847,2,40,woodsman,5,2000,stove,7,"water of the wise(1617)
 
 Each ingredient in the `ingredients` field is `[count ]name(object_id)`. Rows with `skill=(null)` are item-splitting recipes with no associated crafting skill.
 
-The included `m7.txt` was exported from the Debian Sarge (2005) Crossfire release and may differ from exports produced by current builds.
+The included `m7.txt` was exported from a Crossfire server and may differ from exports produced by current builds.
 
 ---
 
@@ -110,7 +121,7 @@ The included `m7.txt` was exported from the Debian Sarge (2005) Crossfire releas
 
 ```
 crossfire-m7/
-├── m7.txt                  Source data (not generated — you provide this)
+├── m7.txt                  Source data (server dump)
 ├── parse_m7.py             Stage 1: CSV parser
 ├── index_recipes.py        Stage 2: forward/reverse indexer
 ├── build_site.py           Stage 3: site builder
@@ -119,13 +130,14 @@ crossfire-m7/
 │   ├── base.html.j2        Shared layout, nav, and CSS variables
 │   ├── index.html.j2       Sortable/searchable recipe list
 │   └── recipe.html.j2      Individual recipe page with SVG graph
+├── intro.txt               Original author's note (Mark Munro, 2016)
+├── README.md
 ├── CLAUDE.md               Developer guide (data model, quirks, extension notes)
-├── all.json                Stage 1 output  (generated)
-├── indexed.json            Stage 2 output  (generated)
-└── site/                   Final site      (generated)
+├── .gitignore
+├── all.json                Stage 1 output  (generated, not committed)
+├── indexed.json            Stage 2 output  (generated, not committed)
+└── site/                   Final site      (generated, not committed)
 ```
-
-Generated files are not committed to version control.
 
 ---
 
@@ -145,7 +157,7 @@ Generated files are not committed to version control.
 
 This project is a Python rewrite of a set of Perl scripts originally written by Mark Munro in 2005 and shared with the Crossfire mailing list in 2016. The original used `HTML::Template`, `Data::Dumper` eval files, and Graphviz-generated GIFs with HTML image maps. This version replaces those with Jinja2, JSON intermediate files, and inline SVG.
 
-The original scripts and their description are preserved in `intro.txt` in the repository history.
+The original author's description is preserved in `intro.txt`.
 
 ---
 
