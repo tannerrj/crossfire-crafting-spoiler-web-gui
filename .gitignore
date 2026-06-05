@@ -1,0 +1,18 @@
+# Generated pipeline artefacts
+all.json
+indexed.json
+site/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
