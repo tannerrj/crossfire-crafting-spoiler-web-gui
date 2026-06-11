@@ -139,6 +139,8 @@ crossfire-m7/
 │   ├── index.html.j2       Sortable/searchable recipe list
 │   └── recipe.html.j2      Individual recipe page with SVG graph
 ├── intro.txt               Original author's note (Mark Munro, 2016)
+├── images/                 Screenshots used in README.md
+├── html/                   Empty placeholder directory
 ├── README.md
 ├── CLAUDE.md               Developer guide (data model, quirks, extension notes)
 ├── .gitignore
