@@ -6,6 +6,14 @@ The output is a fully self-contained directory of HTML files — no server requi
 
 ---
 
+## 📸 Screenshots
+
+### Sample Crafting Recipe
+
+![Sample Recipe Output](images/screenshot-half.png)
+
+---
+
 ## Features
 
 - **442 recipes** across 6 skills: alchemy, bowyer, jeweler, smithery, thaumaturgy, woodsman
