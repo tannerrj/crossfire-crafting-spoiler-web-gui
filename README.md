@@ -1,4 +1,4 @@
-# Crossfire Spoiler Web GUI
+# Crossfire Crafting Spoiler Web GUI
 
 A static site generator for [Crossfire](https://crossfire.real-time.com/) crafting recipes, built from a server dump produced with the `-m7` switch.
 
