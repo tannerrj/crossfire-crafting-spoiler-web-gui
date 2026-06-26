@@ -18,18 +18,7 @@
     flex: 1 1 200px;
   }
 
-  /* ── Two-column layout ───────────────────────────────────── */
-  .recipe-body {
-    display: grid;
-    grid-template-columns: minmax(260px, 380px) 1fr;
-    gap: 1.25rem;
-    align-items: start;
-  }
-  @media (max-width: 720px) {
-    .recipe-body { grid-template-columns: 1fr; }
-  }
-
-  /* ── Info table inside the left card ─────────────────────── */
+  /* ── Info table (Details card) ───────────────────────────── */
   .info-table {
     width: 100%;
     border-collapse: collapse;
@@ -77,20 +66,6 @@
   .ingred-name a { color: var(--green); }
   .ingred-name a:hover { color: #a5d6a7; }
 
-  /* ── Used by list ────────────────────────────────────────── */
-  .used-by-list {
-    list-style: none;
-    margin-top: 0.5rem;
-  }
-  .used-by-list li {
-    padding: 0.35rem 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
-  }
-  .used-by-list li:last-child { border-bottom: none; }
-  .used-by-list a { color: var(--purple); }
-  .used-by-list a:hover { color: #ce93d8; }
-
   /* ── Section headings inside cards ──────────────────────── */
   .card-title {
     font-size: 0.72rem;
@@ -100,9 +75,10 @@
     margin-bottom: 0.5rem;
   }
 
-  /* ── SVG graph card ──────────────────────────────────────── */
+  /* ── SVG graph card (full-width, top) ───────────────────── */
   .graph-card {
     overflow: hidden;
+    margin-bottom: 1.25rem;
   }
   .graph-card .graph-viewport {
     overflow: hidden;
@@ -135,8 +111,49 @@
   .graph-card svg [stroke="black"]  { stroke: var(--border)  !important; }
   .graph-card svg polygon { fill: var(--surface2) !important; stroke: var(--border) !important; }
   .graph-card svg ellipse { fill: var(--surface2) !important; stroke: var(--accent) !important; }
-  /* edge arrows */
   .graph-card svg path { stroke: var(--text-muted) !important; }
+
+  /* ── Lower two-column row (Details | Ingredients) ────────── */
+  .recipe-lower {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 640px) {
+    .recipe-lower { grid-template-columns: 1fr; }
+  }
+
+  /* ── Used-as-ingredient section (full width, multi-column) ── */
+  .used-by-section { }
+  .skill-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+  }
+  .skill-col-heading {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.35rem;
+  }
+  .skill-col-list {
+    list-style: none;
+  }
+  .skill-col-list li {
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .skill-col-list li:last-child { border-bottom: none; }
+  .skill-col-list a { color: var(--purple); }
+  .skill-col-list a:hover { color: #ce93d8; }
 
   /* stub-item notice (ingredient-only entries with no recipe data) */
   .stub-notice {
@@ -145,6 +162,20 @@
     margin-top: 1rem;
     font-size: 0.9rem;
   }
+
+  /* used-by list for stub pages */
+  .used-by-list {
+    list-style: none;
+    margin-top: 0.5rem;
+  }
+  .used-by-list li {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .used-by-list li:last-child { border-bottom: none; }
+  .used-by-list a { color: var(--purple); }
+  .used-by-list a:hover { color: #ce93d8; }
 </style>
 {% endblock %}
 
@@ -160,105 +191,134 @@
 
 {% if recipe.Ingred is defined %}
 {# ── Full recipe entry ────────────────────────────────── #}
-<div class="recipe-body">
 
-  {# Left column: details + ingredients + used-by #}
-  <div style="display:flex; flex-direction:column; gap:1.25rem;">
+{# Dependency graph — full width at the top #}
+{% if svg_content %}
+<div class="card graph-card">
+  <p class="card-title">Dependency graph</p>
+  <div class="graph-viewport" id="graph-viewport">
+    {{ svg_content | safe }}
+  </div>
+  <p class="graph-zoom-hint">Scroll to zoom · Drag to pan · Double-click to reset</p>
+</div>
+{% endif %}
 
-    <div class="card">
-      <p class="card-title">Details</p>
-      {% if recipe.Exp is defined or recipe.Difficulty is defined or recipe.yield is defined %}
-      <div class="stats">
-        {% if recipe.Exp is defined %}
-        <div class="stat">
-          <span class="stat-label">Exp</span>
-          <span class="stat-value">{{ "{:,}".format(recipe.Exp) }}</span>
-        </div>
-        {% endif %}
-        {% if recipe.Difficulty is defined %}
-        <div class="stat">
-          <span class="stat-label">Difficulty</span>
-          <span class="stat-value">{{ recipe.Difficulty }}</span>
-        </div>
-        {% endif %}
-        {% if recipe.Exp is defined and recipe.Difficulty is defined and recipe.Difficulty > 0 %}
-        <div class="stat">
-          <span class="stat-label">Exp/Diff</span>
-          <span class="stat-value">{{ "%.0f"|format(recipe.Exp / recipe.Difficulty) }}</span>
-        </div>
-        {% endif %}
-        {% if recipe.yield is defined and recipe.yield > 1 %}
-        <div class="stat">
-          <span class="stat-label">Yield</span>
-          <span class="stat-value">{{ recipe.yield }}</span>
-        </div>
-        {% endif %}
+{# Details (left) and Ingredients (right) #}
+<div class="recipe-lower">
+
+  <div class="card">
+    <p class="card-title">Details</p>
+    {% if recipe.Exp is defined or recipe.Difficulty is defined or recipe.yield is defined %}
+    <div class="stats">
+      {% if recipe.Exp is defined %}
+      <div class="stat">
+        <span class="stat-label">Exp</span>
+        <span class="stat-value">{{ "{:,}".format(recipe.Exp) }}</span>
       </div>
       {% endif %}
-
-      <table class="info-table">
-        {% if recipe.Cauldron is defined %}
-        <tr><td>Equipment</td><td>{{ recipe.Cauldron }}</td></tr>
-        {% endif %}
-        {% if recipe.chance is defined %}
-        <tr><td>Book&nbsp;chance</td><td>{{ recipe.chance }}</td></tr>
-        {% endif %}
-        {% if recipe.ingred_price is defined %}
-        <tr><td>Ingredient&nbsp;cost</td><td>{{ "{:,}".format(recipe.ingred_price) }}</td></tr>
-        {% endif %}
-        {% if recipe.result_price is defined %}
-        <tr><td>Result&nbsp;value</td><td>{{ "{:,}".format(recipe.result_price) }}</td></tr>
-        {% endif %}
-        {% if recipe.ingred_price is defined and recipe.result_price is defined and recipe.ingred_price > 0 %}
-        <tr>
-          <td>Profit</td>
-          <td style="color: {% if recipe.result_price > recipe.ingred_price %}var(--green){% else %}var(--red){% endif %}">
-            {{ "{:,}".format(recipe.result_price - recipe.ingred_price) }}
-          </td>
-        </tr>
-        {% endif %}
-      </table>
-    </div>
-
-    <div class="card">
-      <p class="card-title">Ingredients</p>
-      <ul class="ingred-list">
-        {% for ing in recipe.Ingred %}
-        <li>
-          <span class="ingred-count">{{ ing.count }}×</span>
-          <span class="ingred-name">
-            <a href="{{ ing.nameHash }}.html">{{ ing.name }}</a>
-          </span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    {% if recipe.ancestors is defined and recipe.ancestors %}
-    <div class="card">
-      <p class="card-title">Used as ingredient in</p>
-      <ul class="used-by-list">
-        {% for anc in recipe.ancestors %}
-        <li><a href="{{ anc.nameHash }}.html">{{ anc.name }}</a></li>
-        {% endfor %}
-      </ul>
+      {% if recipe.Difficulty is defined %}
+      <div class="stat">
+        <span class="stat-label">Difficulty</span>
+        <span class="stat-value">{{ recipe.Difficulty }}</span>
+      </div>
+      {% endif %}
+      {% if recipe.Exp is defined and recipe.Difficulty is defined and recipe.Difficulty > 0 %}
+      <div class="stat">
+        <span class="stat-label">Exp/Diff</span>
+        <span class="stat-value">{{ "%.0f"|format(recipe.Exp / recipe.Difficulty) }}</span>
+      </div>
+      {% endif %}
+      {% if recipe.yield is defined and recipe.yield > 1 %}
+      <div class="stat">
+        <span class="stat-label">Yield</span>
+        <span class="stat-value">{{ recipe.yield }}</span>
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 
+    <table class="info-table">
+      {% if recipe.Cauldron is defined %}
+      <tr><td>Equipment</td><td>{{ recipe.Cauldron }}</td></tr>
+      {% endif %}
+      {% if recipe.chance is defined %}
+      <tr><td>Book&nbsp;chance</td><td>{{ recipe.chance }}</td></tr>
+      {% endif %}
+      {% if recipe.ingred_price is defined %}
+      <tr><td>Ingredient&nbsp;cost</td><td>{{ "{:,}".format(recipe.ingred_price) }}</td></tr>
+      {% endif %}
+      {% if recipe.result_price is defined %}
+      <tr><td>Result&nbsp;value</td><td>{{ "{:,}".format(recipe.result_price) }}</td></tr>
+      {% endif %}
+      {% if recipe.ingred_price is defined and recipe.result_price is defined and recipe.ingred_price > 0 %}
+      <tr>
+        <td>Profit</td>
+        <td style="color: {% if recipe.result_price > recipe.ingred_price %}var(--green){% else %}var(--red){% endif %}">
+          {{ "{:,}".format(recipe.result_price - recipe.ingred_price) }}
+        </td>
+      </tr>
+      {% endif %}
+    </table>
   </div>
 
-  {# Right column: dependency graph #}
-  {% if svg_content %}
-  <div class="card graph-card">
-    <p class="card-title">Dependency graph</p>
-    <div class="graph-viewport" id="graph-viewport">
-      {{ svg_content | safe }}
-    </div>
-    <p class="graph-zoom-hint">Scroll to zoom · Drag to pan · Double-click to reset</p>
+  <div class="card">
+    <p class="card-title">Ingredients</p>
+    <ul class="ingred-list">
+      {% for ing in recipe.Ingred %}
+      <li>
+        <span class="ingred-count">{{ ing.count }}×</span>
+        <span class="ingred-name">
+          <a href="{{ ing.nameHash }}.html">{{ ing.name }}</a>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
   </div>
-  {% endif %}
 
 </div>
+
+{# Used as ingredient in — full width, grouped by skill #}
+{% if recipe.ancestors is defined and recipe.ancestors %}
+{% set skill_order = ['alchemy','bowyer','jeweler','smithery','thaumaturgy','woodsman'] %}
+{# Collect unique skills from ancestors, preserving preferred order then alphabetical for unknowns #}
+{% set ns = namespace(by_skill={}) %}
+{% for anc in recipe.ancestors %}
+  {% set sk = anc.skill if anc.skill else 'other' %}
+  {% if sk not in ns.by_skill %}
+    {% set _ = ns.by_skill.update({sk: []}) %}
+  {% endif %}
+  {% set _ = ns.by_skill[sk].append(anc) %}
+{% endfor %}
+<div class="card used-by-section">
+  <p class="card-title">Used as ingredient in</p>
+  <div class="skill-columns">
+    {% for sk in skill_order %}
+      {% if sk in ns.by_skill %}
+      <div>
+        <p class="skill-col-heading">{{ sk|capitalize }}</p>
+        <ul class="skill-col-list">
+          {% for anc in ns.by_skill[sk] %}
+          <li><a href="{{ anc.nameHash }}.html">{{ anc.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% endfor %}
+    {% for sk, items in ns.by_skill.items() %}
+      {% if sk not in skill_order %}
+      <div>
+        <p class="skill-col-heading">{{ sk|capitalize }}</p>
+        <ul class="skill-col-list">
+          {% for anc in items %}
+          <li><a href="{{ anc.nameHash }}.html">{{ anc.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% else %}
 {# ── Ingredient-only stub page ─────────────────────────── #}

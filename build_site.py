@@ -190,10 +190,14 @@ def build_site(
         if not force and html_path.exists():
             continue
 
-        # Populate ancestors list for "used by" section
+        # Populate ancestors list for "used by" section (includes skill for grouping)
         if 'usedBy' in recipe:
             recipe['ancestors'] = [
-                {'name': recipes[j]['name'], 'nameHash': recipes[j]['nameHash']}
+                {
+                    'name':     recipes[j]['name'],
+                    'nameHash': recipes[j]['nameHash'],
+                    'skill':    recipes[j].get('skill', ''),
+                }
                 for j in recipe['usedBy']
                 if j < len(recipes)
             ]
