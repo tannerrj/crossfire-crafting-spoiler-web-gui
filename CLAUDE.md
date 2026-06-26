@@ -1,4 +1,4 @@
-# CLAUDE.md — Crossfire Spoiler Web GUI
+# CLAUDE.md — Crossfire Crafting Spoiler Web GUI
 
 Developer guide for AI assistants and contributors working on this codebase.
 

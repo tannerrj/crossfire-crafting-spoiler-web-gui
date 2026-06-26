@@ -61,7 +61,7 @@ Graphviz is optional. Without it, recipe pages are generated without dependency 
 
 ```bash
 git clone https://github.com/tannerrj/crossfire-crafting-spoiler-web-gui
-cd crossfire-spoiler-web-gui
+cd crossfire-crafting-spoiler-web-gui
 
 make
 
