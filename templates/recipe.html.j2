@@ -104,11 +104,28 @@
   .graph-card {
     overflow: hidden;
   }
+  .graph-card .graph-viewport {
+    overflow: hidden;
+    width: 100%;
+    height: 420px;
+    cursor: grab;
+    position: relative;
+    touch-action: none;
+  }
+  .graph-card .graph-viewport.panning { cursor: grabbing; }
   .graph-card svg {
     width: 100%;
-    height: auto;
-    max-height: 520px;
+    height: 100%;
     display: block;
+    transform-origin: 0 0;
+    user-select: none;
+  }
+  .graph-zoom-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 0.35rem;
+    letter-spacing: .03em;
   }
   /* Recolour graphviz SVG elements to fit dark theme */
   .graph-card svg text { fill: var(--text) !important; }
@@ -234,7 +251,10 @@
   {% if svg_content %}
   <div class="card graph-card">
     <p class="card-title">Dependency graph</p>
-    {{ svg_content | safe }}
+    <div class="graph-viewport" id="graph-viewport">
+      {{ svg_content | safe }}
+    </div>
+    <p class="graph-zoom-hint">Scroll to zoom · Drag to pan · Double-click to reset</p>
   </div>
   {% endif %}
 
@@ -264,5 +284,100 @@
   </p>
   {% endif %}
 </div>
+{% endif %}
+
+{% if svg_content %}
+<script>
+(function () {
+  var vp  = document.getElementById('graph-viewport');
+  if (!vp) return;
+  var svg = vp.querySelector('svg');
+  if (!svg) return;
+
+  var scale = 1, tx = 0, ty = 0;
+  var dragging = false, startX, startY, startTx, startTy;
+  var lastDist = null;
+
+  function clampAndApply() {
+    svg.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+  }
+
+  /* ── scroll to zoom ── */
+  vp.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var rect   = vp.getBoundingClientRect();
+    var mx     = e.clientX - rect.left;
+    var my     = e.clientY - rect.top;
+    var factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    var newScale = Math.min(Math.max(scale * factor, 0.2), 8);
+    tx = mx - (mx - tx) * (newScale / scale);
+    ty = my - (my - ty) * (newScale / scale);
+    scale = newScale;
+    clampAndApply();
+  }, { passive: false });
+
+  /* ── drag to pan ── */
+  vp.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    dragging = true; startX = e.clientX; startY = e.clientY;
+    startTx = tx; startTy = ty;
+    vp.classList.add('panning');
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    tx = startTx + (e.clientX - startX);
+    ty = startTy + (e.clientY - startY);
+    clampAndApply();
+  });
+  window.addEventListener('mouseup', function () {
+    dragging = false;
+    vp.classList.remove('panning');
+  });
+
+  /* ── double-click to reset ── */
+  vp.addEventListener('dblclick', function () {
+    scale = 1; tx = 0; ty = 0;
+    clampAndApply();
+  });
+
+  /* ── pinch to zoom (touch) ── */
+  vp.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    } else if (e.touches.length === 1) {
+      dragging = true;
+      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+      startTx = tx; startTy = ty;
+    }
+  }, { passive: true });
+  vp.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && lastDist !== null) {
+      e.preventDefault();
+      var dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      var mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - vp.getBoundingClientRect().left;
+      var my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - vp.getBoundingClientRect().top;
+      var newScale = Math.min(Math.max(scale * (dist / lastDist), 0.2), 8);
+      tx = mx - (mx - tx) * (newScale / scale);
+      ty = my - (my - ty) * (newScale / scale);
+      scale = newScale;
+      lastDist = dist;
+      clampAndApply();
+    } else if (e.touches.length === 1 && dragging) {
+      tx = startTx + (e.touches[0].clientX - startX);
+      ty = startTy + (e.touches[0].clientY - startY);
+      clampAndApply();
+    }
+  }, { passive: false });
+  vp.addEventListener('touchend', function () {
+    lastDist = null; dragging = false;
+  });
+})();
+</script>
 {% endif %}
 {% endblock %}
